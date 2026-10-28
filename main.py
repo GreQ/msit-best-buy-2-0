@@ -19,9 +19,9 @@ third_one_free = promotions.ThirdOneFree("Third One Free!")
 thirty_percent = promotions.PercentDiscount("30% off!", percent=30)
 
 # Add promotions to products
-product_list[0].set_promotion(second_half_price)
-product_list[1].set_promotion(third_one_free)
-product_list[3].set_promotion(thirty_percent)
+product_list[0].promotion = second_half_price
+product_list[1].promotion = third_one_free
+product_list[3].promotion = thirty_percent
 
 best_buy = store.Store(product_list)
 cart: list[tuple[products.Product, int]] = []
@@ -60,8 +60,8 @@ def show_order_options(shop: store.Store) -> None:
                 quantity =int(input_quantity)
                 if quantity > 0:
                     #stock left after what is already in cart
-                    remaining = product.get_quantity() - sum(q for p, q in cart if p == product)
-                    if product.get_quantity() > 0 and remaining < quantity:
+                    remaining = product.quantity - sum(q for p, q in cart if p == product)
+                    if product.quantity > 0 and remaining < quantity:
                         #auto adjust quantity to remaining stock if not enough stock (non-stocked products have quantity 0)
                         if remaining > 0:
                             print(f"Not enough stock for {product.name}. We adjusted your order to the remaining quantity of {remaining}.")

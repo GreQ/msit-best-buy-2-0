@@ -1,5 +1,3 @@
-
-
 import products
 
 
@@ -26,7 +24,7 @@ class Store:
 
     #get the total quantity of all products in the store
     def get_total_quantity(self) -> int:
-        return sum(product.get_quantity() for product in self.products)
+        return sum(product.quantity for product in self.products)
 
     #get a list of all products in the store
     def get_all_products(self) -> list[products.Product]:
@@ -34,17 +32,27 @@ class Store:
     
     #get a list of all available products (products deactivate themselves when out of stock)
     def get_available_products(self) -> list[products.Product]:
-        return [product for product in self.products if product.is_active()]
+        return [product for product in self.products if product.active]
 
     #print index of all available products with price and quantity
     def show_products(self) -> list[products.Product]:
         available_products = self.get_available_products()
         print ("\n-----\nProducts:")
-        for i in range(len(available_products)):
-            available_products[i].show(i+1)
+        for i, product in enumerate(available_products):
+            print(f"{i + 1}. {product}")
         print ("-----")
         #return list in order to pick from by index
         return available_products
+
+    #check if product is in store with the `in` operator
+    def __contains__(self, product: object) -> bool:
+        return product in self.products
+
+    #combine two stores with the + operator into a new store (products are shared, not copied)
+    def __add__(self, other: "Store") -> "Store":
+        if not isinstance(other, Store):
+            return NotImplemented
+        return Store(self.products + [product for product in other.products if product not in self.products])
 
     def order(self, cart: list[tuple[products.Product, int]]) -> float:
         total_cost: float = 0
@@ -66,7 +74,7 @@ class Store:
         if failures:
             print("The following items could not be purchased due to insufficient stock or unavailability:")    
             for product, quantity in failures:
-                print(f" - {product.name}, quantity:{quantity} (available: {product.is_active()}: quantity: {product.get_quantity()})")
+                print(f" - {product.name}, quantity:{quantity} (available: {product.active}: quantity: {product.quantity})")
             print ("Please correct order if possible and submit again.")
 
         return total_cost

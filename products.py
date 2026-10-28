@@ -5,70 +5,113 @@ class Product:
     total_products: int = 0
 
     def __init__(self, name: str, price: float, quantity: int = 1) -> None:
-        if not isinstance(name, str) or not name.strip():
-            raise ValueError("Product name cannot be empty.")
-        if price < 0:
-            raise ValueError("Price cannot be negative.")
         if quantity < 0:
             raise ValueError("Quantity cannot be negative.")
-        self.active = True
+        #name and price are validated by their property setters
         self.name = name
         self.price = price
-        self.quantity = quantity
-        self.promotions: list[Promotion] = []
+        self._quantity = quantity
+        self._active = True
+        self._promotions: list[Promotion] = []
         Product.total_products += quantity
 
-    def get_quantity(self) -> int:
-        return self.quantity
+    @property
+    def name(self) -> str:
+        return self._name
 
-    def set_quantity(self, quantity: int) -> None:
+    @name.setter
+    def name(self, name: str) -> None:
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("Product name cannot be empty.")
+        self._name = name
+
+    @property
+    def price(self) -> float:
+        return self._price
+
+    @price.setter
+    def price(self, price: float) -> None:
+        if price < 0:
+            raise ValueError("Price cannot be negative.")
+        self._price = price
+
+    @property
+    def quantity(self) -> int:
+        return self._quantity
+
+    #setting quantity to 0 deactivates the product
+    @quantity.setter
+    def quantity(self, quantity: int) -> None:
         if quantity < 0:
             raise ValueError("Quantity cannot be negative.")
-        Product.total_products += (quantity - self.quantity)
-        self.quantity = quantity
-        if self.quantity == 0:
+        Product.total_products += (quantity - self._quantity)
+        self._quantity = quantity
+        if self._quantity == 0:
             self.deactivate()
 
-    #first promotion of the product, None if there is none
-    def get_promotion(self) -> Promotion | None:
-        return self.promotions[0] if self.promotions else None
+    @property
+    def active(self) -> bool:
+        return self._active
 
-    #replace all promotions with a single one, None removes all promotions
-    def set_promotion(self, promotion: Promotion | None) -> None:
-        self.promotions = [promotion] if promotion is not None else []
-
-    def get_promotions(self) -> list[Promotion]:
-        return list(self.promotions)
-
-    def add_promotion(self, promotion: Promotion) -> None:
-        if promotion not in self.promotions:
-            self.promotions.append(promotion)
-
-    def remove_promotion(self, promotion: Promotion) -> None:
-        if promotion not in self.promotions:
-            raise ValueError(f"{promotion.name} is not a promotion of {self.name}.")
-        self.promotions.remove(promotion)
-
-    #total price for quantity, promotions don't stack: the cheapest price for the customer is used
-    def get_price(self, quantity: int) -> float:
-        prices = [promotion.apply_promotion(self, quantity) for promotion in self.promotions]
-        return min([self.price * quantity, *prices])
-
-    #text appended to show() output, empty if no promotion
-    def promotion_info(self) -> str:
-        if not self.promotions:
-            return ""
-        label = "Promotion" if len(self.promotions) == 1 else "Promotions (best price applies)"
-        return f", {label}: {', '.join(promotion.name for promotion in self.promotions)}"
-
-    def is_active(self) -> bool:
-        return self.active
+    @active.setter
+    def active(self, active: bool) -> None:
+        self._active = active
 
     def activate(self) -> None:
         self.active = True
 
     def deactivate(self) -> None:
         self.active = False
+
+    #first promotion of the product, None if there is none
+    @property
+    def promotion(self) -> Promotion | None:
+        return self._promotions[0] if self._promotions else None
+
+    #replace all promotions with a single one, None removes all promotions
+    @promotion.setter
+    def promotion(self, promotion: Promotion | None) -> None:
+        self._promotions = [promotion] if promotion is not None else []
+
+    #copy of all promotions, use add_promotion/remove_promotion to change them
+    @property
+    def promotions(self) -> list[Promotion]:
+        return list(self._promotions)
+
+    def add_promotion(self, promotion: Promotion) -> None:
+        if promotion not in self._promotions:
+            self._promotions.append(promotion)
+
+    def remove_promotion(self, promotion: Promotion) -> None:
+        if promotion not in self._promotions:
+            raise ValueError(f"{promotion.name} is not a promotion of {self.name}.")
+        self._promotions.remove(promotion)
+
+    #total price for quantity, promotions don't stack: the cheapest price for the customer is used
+    def get_price(self, quantity: int) -> float:
+        prices = [promotion.apply_promotion(self, quantity) for promotion in self._promotions]
+        return min([self.price * quantity, *prices])
+
+    #text appended to __str__ output, empty if no promotion
+    def _promotion_info(self) -> str:
+        if not self._promotions:
+            return ""
+        label = "Promotion" if len(self._promotions) == 1 else "Promotions (best price applies)"
+        return f", {label}: {', '.join(promotion.name for promotion in self._promotions)}"
+
+    def __str__(self) -> str:
+        return f"{self.name}, Price: ${self.price}, Quantity: {self.quantity}{self._promotion_info()}"
+
+    #compare products by price, no __eq__ so products stay unique by identity (needed for `in` and cart merging)
+    def __gt__(self, other: object) -> bool:
+        if not isinstance(other, Product):
+            return NotImplemented
+        return self.price > other.price
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, Product):
+            return NotImplemented
+        return self.price < other.price
 
     def available(self, quantity: int) -> bool:
         if self.quantity <= 0:
@@ -77,27 +120,20 @@ class Product:
         if self.quantity < quantity:
             print(f"Not enough {self.name} in stock. Only {self.quantity} available.")
             return False
-        elif not self.is_active():
+        elif not self.active:
             print(f"Product {self.name} unavailable.")
             return False
         else:
             return True
 
-    def show(self, index: int = 0) -> None:
-        prefix = f"{index}. " if index > 0 else ""
-        print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: {self.quantity}, Active: {self.active}{self.promotion_info()}")
-
-
     def buy(self, quantity: int) -> float:
         if quantity <= 0:
             raise ValueError("Quantity must be greater than zero.")
-        if not self.is_active():
+        if not self.active:
             raise ValueError(f"Product {self.name} is not active.")
         if quantity > self.quantity:
             raise ValueError(f"Not enough stock for {self.name}. Available: {self.quantity}.")
         self.quantity -= quantity
-        if self.quantity == 0:
-            self.deactivate()
         print(f"Bought {quantity} of {self.name}. Remaining stock: {self.quantity}.")
         return self.get_price(quantity)
 
@@ -108,24 +144,28 @@ class NonStockedProduct(Product):
     def __init__(self, name: str, price: float) -> None:
         super().__init__(name, price, quantity=0)
 
-    def set_quantity(self, quantity: int) -> None:
+    @property
+    def quantity(self) -> int:
+        return 0
+
+    @quantity.setter
+    def quantity(self, quantity: int) -> None:
         if quantity != 0:
             raise ValueError(f"{self.name} is not stocked, quantity must stay 0.")
 
     def available(self, quantity: int) -> bool:
-        if not self.is_active():
+        if not self.active:
             print(f"Product {self.name} unavailable.")
             return False
         return True
 
-    def show(self, index: int = 0) -> None:
-        prefix = f"{index}. " if index > 0 else ""
-        print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: Unlimited (non-stocked), Active: {self.active}{self.promotion_info()}")
+    def __str__(self) -> str:
+        return f"{self.name}, Price: ${self.price}, Quantity: Unlimited (non-stocked){self._promotion_info()}"
 
     def buy(self, quantity: int) -> float:
         if quantity <= 0:
             raise ValueError("Quantity must be greater than zero.")
-        if not self.is_active():
+        if not self.active:
             raise ValueError(f"Product {self.name} is not active.")
         print(f"Bought {quantity} of {self.name}.")
         return self.get_price(quantity)
@@ -136,9 +176,17 @@ class LimitedProduct(Product):
 
     def __init__(self, name: str, price: float, quantity: int, maximum: int) -> None:
         super().__init__(name, price, quantity)
+        self.maximum = maximum
+
+    @property
+    def maximum(self) -> int:
+        return self._maximum
+
+    @maximum.setter
+    def maximum(self, maximum: int) -> None:
         if maximum < 1:
             raise ValueError("Maximum must be at least 1.")
-        self.maximum = maximum
+        self._maximum = maximum
 
     def available(self, quantity: int) -> bool:
         if quantity > self.maximum:
@@ -146,9 +194,8 @@ class LimitedProduct(Product):
             return False
         return super().available(quantity)
 
-    def show(self, index: int = 0) -> None:
-        prefix = f"{index}. " if index > 0 else ""
-        print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: {self.quantity}, Limited to {self.maximum} per order!, Active: {self.active}{self.promotion_info()}")
+    def __str__(self) -> str:
+        return f"{self.name}, Price: ${self.price}, Quantity: {self.quantity}, Limited to {self.maximum} per order!{self._promotion_info()}"
 
     def buy(self, quantity: int) -> float:
         if quantity > self.maximum:

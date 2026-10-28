@@ -38,36 +38,36 @@ def test_third_one_free() -> None:
 
 def test_set_and_get_promotion() -> None:
     product = Product("MacBook Air M2", price=1450, quantity=100)
-    assert product.get_promotion() is None
+    assert product.promotion is None
     promotion = SecondHalfPrice("Second Half price!")
-    product.set_promotion(promotion)
-    assert product.get_promotion() is promotion
+    product.promotion = promotion
+    assert product.promotion is promotion
 
 
 def test_set_promotion_none_removes_promotion() -> None:
     product = Product("MacBook Air M2", price=1450, quantity=100)
-    product.set_promotion(SecondHalfPrice("Second Half price!"))
-    product.set_promotion(None)
-    assert product.get_promotion() is None
+    product.promotion = SecondHalfPrice("Second Half price!")
+    product.promotion = None
+    assert product.promotion is None
     assert product.buy(2) == 2900
 
 
 def test_buy_applies_promotion() -> None:
     product = Product("MacBook Air M2", price=1450, quantity=100)
-    product.set_promotion(SecondHalfPrice("Second Half price!"))
+    product.promotion = SecondHalfPrice("Second Half price!")
     assert product.buy(2) == 2175
-    assert product.get_quantity() == 98
+    assert product.quantity == 98
 
 
 def test_buy_applies_promotion_on_non_stocked_product() -> None:
     product = NonStockedProduct("Windows License", price=125)
-    product.set_promotion(PercentDiscount("30% off!", percent=30))
+    product.promotion = PercentDiscount("30% off!", percent=30)
     assert product.buy(2) == 175
 
 
 def test_buy_applies_promotion_on_limited_product() -> None:
     product = LimitedProduct("Shipping", price=10, quantity=250, maximum=1)
-    product.set_promotion(PercentDiscount("50% off!", percent=50))
+    product.promotion = PercentDiscount("50% off!", percent=50)
     assert product.buy(1) == 5
 
 
@@ -75,16 +75,16 @@ def test_same_promotion_on_multiple_products() -> None:
     promotion = PercentDiscount("10% off!", percent=10)
     mac = Product("MacBook Air M2", price=1450, quantity=100)
     pixel = Product("Google Pixel 7", price=500, quantity=250)
-    mac.set_promotion(promotion)
-    pixel.set_promotion(promotion)
+    mac.promotion = promotion
+    pixel.promotion = promotion
     assert mac.buy(1) == 1305
     assert pixel.buy(1) == 450
 
 
 def test_show_includes_promotion(capsys: pytest.CaptureFixture[str]) -> None:
     product = Product("MacBook Air M2", price=1450, quantity=100)
-    product.set_promotion(SecondHalfPrice("Second Half price!"))
-    product.show()
+    product.promotion = SecondHalfPrice("Second Half price!")
+    print(product)
     assert "Promotion: Second Half price!" in capsys.readouterr().out
 
 
@@ -95,7 +95,7 @@ def test_add_multiple_promotions() -> None:
     product.add_promotion(second_half_price)
     product.add_promotion(third_one_free)
     product.add_promotion(second_half_price)
-    assert product.get_promotions() == [second_half_price, third_one_free]
+    assert product.promotions == [second_half_price, third_one_free]
 
 
 def test_multiple_promotions_use_best_price() -> None:
@@ -115,7 +115,7 @@ def test_remove_promotion() -> None:
     product.add_promotion(second_half_price)
     product.add_promotion(third_one_free)
     product.remove_promotion(second_half_price)
-    assert product.get_promotions() == [third_one_free]
+    assert product.promotions == [third_one_free]
 
 
 def test_remove_missing_promotion_raises() -> None:
@@ -128,7 +128,7 @@ def test_show_lists_multiple_promotions(capsys: pytest.CaptureFixture[str]) -> N
     product = Product("MacBook Air M2", price=1450, quantity=100)
     product.add_promotion(SecondHalfPrice("Second Half price!"))
     product.add_promotion(ThirdOneFree("Third One Free!"))
-    product.show()
+    print(product)
     output = capsys.readouterr().out
     assert "Second Half price!" in output
     assert "Third One Free!" in output
