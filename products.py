@@ -2,6 +2,12 @@ class Product:
     total_products = 0
 
     def __init__(self, name, price, quantity=1):
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("Product name cannot be empty.")
+        if price < 0:
+            raise ValueError("Price cannot be negative.")
+        if quantity < 0:
+            raise ValueError("Quantity cannot be negative.")
         self.active = True
         self.name = name
         self.price = price
@@ -13,10 +19,11 @@ class Product:
 
     def set_quantity(self, quantity):
         if quantity < 0:
-            print("Quantity cannot be negative.")
-        else:
-            Product.total_products += (quantity - self.quantity)
-            self.quantity = quantity
+            raise ValueError("Quantity cannot be negative.")
+        Product.total_products += (quantity - self.quantity)
+        self.quantity = quantity
+        if self.quantity == 0:
+            self.deactivate()
 
     def is_active(self) -> bool:
         return self.active
@@ -48,12 +55,13 @@ class Product:
 
     def buy(self, quantity):
         if quantity <= 0:
-            print("Quantity must be greater than zero.")
-            return 0
-        if self.quantity >= quantity:
-            self.quantity -= quantity
-            print(f"Bought {quantity} of {self.name}. Remaining stock: {self.quantity}.")
-            return quantity * self.price
-        else:
-            print(f"Not enough stock for {self.name}. Available: {self.quantity}.")
-            return 0
+            raise ValueError("Quantity must be greater than zero.")
+        if not self.is_active():
+            raise ValueError(f"Product {self.name} is not active.")
+        if quantity > self.quantity:
+            raise ValueError(f"Not enough stock for {self.name}. Available: {self.quantity}.")
+        self.quantity -= quantity
+        if self.quantity == 0:
+            self.deactivate()
+        print(f"Bought {quantity} of {self.name}. Remaining stock: {self.quantity}.")
+        return quantity * self.price

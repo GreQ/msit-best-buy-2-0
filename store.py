@@ -52,10 +52,10 @@ class Store:
         #todo: join same products/quantity in cart in order to failure if not enough stock and place no partial orders of same product. 
         for product, quantity in cart:
             if product in self.products:
-                price_product = product.buy(quantity)
-                if price_product:
-                    total_cost += price_product
-                else:
+                try:
+                    total_cost += product.buy(quantity)
+                except ValueError as error:
+                    print(error)
                     failures.append((product, quantity))
             else:
                 print(f"{product.name} not found in the store.")
