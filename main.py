@@ -2,11 +2,14 @@ import store
 import products
 
 
+# setup initial stock of inventory
 product_list = [products.Product("MacBook Air M2", price=1450, quantity=100),
                 products.Product("Bose QuietComfort Earbuds", price=250, quantity=500),
                 products.Product("Google Pixel 7", price=500, quantity=250),
+                products.NonStockedProduct("Windows License", price=125),
+                products.LimitedProduct("Shipping", price=10, quantity=250, maximum=1)
                ]
-best_buy = store.Store(products=product_list)
+best_buy = store.Store(product_list)
 cart = []
 active_options = "main_options"
 
@@ -42,11 +45,17 @@ def show_order_options(shop):
             if input_quantity.isdigit():
                 quantity =int(input_quantity)
                 if quantity > 0:
-                    if product.get_quantity() < quantity:
-                        #auto adjust quantity to available stock if not enough stock
-                        print(f"Not enough stock for {product.name}. We adjusted your order to the available quantity of {product.get_quantity()}.")
-                        quantity = product.get_quantity()
-                    add_to_cart(product, quantity)
+                    #stock left after what is already in cart
+                    remaining = product.get_quantity() - sum(q for p, q in cart if p == product)
+                    if product.get_quantity() > 0 and remaining < quantity:
+                        #auto adjust quantity to remaining stock if not enough stock (non-stocked products have quantity 0)
+                        if remaining > 0:
+                            print(f"Not enough stock for {product.name}. We adjusted your order to the remaining quantity of {remaining}.")
+                            add_to_cart(product, remaining)
+                        else:
+                            print(f"All available {product.name} are already in your cart.")
+                    else:
+                        add_to_cart(product, quantity)
                 else:
                     remove_from_cart(product)
             else:
@@ -80,8 +89,11 @@ def show_cart():
     print("-----")
 
 def add_to_cart(product, quantity):
-    if product.available(quantity):
-        cart.append((product, quantity))
+    #merge with quantity of same product already in cart
+    in_cart = sum(q for p, q in cart if p == product)
+    if product.available(in_cart + quantity):
+        cart[:] = [(p, q) for p, q in cart if p != product]
+        cart.append((product, in_cart + quantity))
         print(f"Added {quantity} {product.name} to cart.")
         show_cart()
     else:

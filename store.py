@@ -32,9 +32,9 @@ class Store:
     def get_all_products(self):
         return self.products
     
-    #get a list of all available (active + in stock) products
+    #get a list of all available products (products deactivate themselves when out of stock)
     def get_available_products(self):
-        return [product for product in self.products if product.is_active() and product.get_quantity() > 0]
+        return [product for product in self.products if product.is_active()]
 
     #print index of all available products with price and quantity
     def show_products(self):
@@ -49,8 +49,11 @@ class Store:
     def order(self, cart):
         total_cost = 0
         failures = [];
-        #todo: join same products/quantity in cart in order to failure if not enough stock and place no partial orders of same product. 
+        #join same products in cart, so stock and order limits are checked against the total quantity (no partial orders of same product)
+        merged_cart = {}
         for product, quantity in cart:
+            merged_cart[product] = merged_cart.get(product, 0) + quantity
+        for product, quantity in merged_cart.items():
             if product in self.products:
                 try:
                     total_cost += product.buy(quantity)
