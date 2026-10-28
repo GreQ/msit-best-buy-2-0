@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import store
 import products
 
@@ -10,16 +12,16 @@ product_list = [products.Product("MacBook Air M2", price=1450, quantity=100),
                 products.LimitedProduct("Shipping", price=10, quantity=250, maximum=1)
                ]
 best_buy = store.Store(product_list)
-cart = []
+cart: list[tuple[products.Product, int]] = []
 active_options = "main_options"
 
-def show_main_options(shop):
-    routes = [
-        ["List all products in store", shop.show_products],
-        ["Show total amount in store",  lambda: print(f"Total products in store: {shop.get_total_quantity()}")],
-        ["Make an order", lambda: show_order_options(shop)],
-        ["Quit", lambda: exit()]
-    ];
+def show_main_options(shop: store.Store) -> None:
+    routes: list[tuple[str, Callable[[], object]]] = [
+        ("List all products in store", shop.show_products),
+        ("Show total amount in store",  lambda: print(f"Total products in store: {shop.get_total_quantity()}")),
+        ("Make an order", lambda: show_order_options(shop)),
+        ("Quit", lambda: exit())
+    ]
     active_options = "main_options"
     while active_options == "main_options":
         print("\n***** Store Menu *****")
@@ -31,7 +33,7 @@ def show_main_options(shop):
         else:
             print("Invalid choice. Please try again.")
 
-def show_order_options(shop):
+def show_order_options(shop: store.Store) -> None:
     active_options = "order_options"
     while active_options == "order_options":
         print("\nTo finish order just hit return.")
@@ -75,12 +77,12 @@ def show_order_options(shop):
         else:
             print("Invalid choice. Please try again.")
 
-def show_cart():
+def show_cart() -> None:
     if not cart:
         print("Your cart is empty.")
         return
     print("\n-----\nYour cart:")
-    price_total = 0
+    price_total: float = 0
     for i, (product, quantity) in enumerate(cart):
         price_product = product.price * quantity
         price_total += price_product
@@ -88,7 +90,7 @@ def show_cart():
     print(f"Total cost: ${price_total}")
     print("-----")
 
-def add_to_cart(product, quantity):
+def add_to_cart(product: products.Product, quantity: int) -> None:
     #merge with quantity of same product already in cart
     in_cart = sum(q for p, q in cart if p == product)
     if product.available(in_cart + quantity):
@@ -99,19 +101,19 @@ def add_to_cart(product, quantity):
     else:
         print(f"Could not add {quantity} {product.name} to cart.")
 
-def remove_from_cart(product):
+def remove_from_cart(product: products.Product) -> None:
     global cart
     cart = [(p, q) for p, q in cart if p != product]
     print(f"Removed {product.name} from cart.")
     show_cart()
 
 
-def task1(shop):
+def task1(shop: store.Store) -> None:
     products = shop.get_all_products()
     print(shop.get_total_quantity())
     print(shop.order([(products[0], 2), (products[1], 3)]))
 
-def start(shop):
+def start(shop: store.Store) -> None:
     shop.add_product(products.Product("Banana", 0.35, 5))
     shop.add_product(products.Product("Lemon", 0.8, 15))
     shop.add_product(products.Product("Apple", 0.22, 22))

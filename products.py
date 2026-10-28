@@ -1,7 +1,7 @@
 class Product:
-    total_products = 0
+    total_products: int = 0
 
-    def __init__(self, name, price, quantity=1):
+    def __init__(self, name: str, price: float, quantity: int = 1) -> None:
         if not isinstance(name, str) or not name.strip():
             raise ValueError("Product name cannot be empty.")
         if price < 0:
@@ -14,10 +14,10 @@ class Product:
         self.quantity = quantity
         Product.total_products += quantity
 
-    def get_quantity(self):
+    def get_quantity(self) -> int:
         return self.quantity
 
-    def set_quantity(self, quantity):
+    def set_quantity(self, quantity: int) -> None:
         if quantity < 0:
             raise ValueError("Quantity cannot be negative.")
         Product.total_products += (quantity - self.quantity)
@@ -28,13 +28,13 @@ class Product:
     def is_active(self) -> bool:
         return self.active
 
-    def activate(self):
+    def activate(self) -> None:
         self.active = True
 
-    def deactivate(self):
+    def deactivate(self) -> None:
         self.active = False
 
-    def available(self, quantity) -> bool:
+    def available(self, quantity: int) -> bool:
         if self.quantity <= 0:
             print(f"{self.name} out of stock.")
             return False
@@ -47,12 +47,12 @@ class Product:
         else:
             return True
 
-    def show(self, index=0):
+    def show(self, index: int = 0) -> None:
         prefix = f"{index}. " if index > 0 else ""
         print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: {self.quantity}, Active: {self.active}")
 
 
-    def buy(self, quantity):
+    def buy(self, quantity: int) -> float:
         if quantity <= 0:
             raise ValueError("Quantity must be greater than zero.")
         if not self.is_active():
@@ -69,24 +69,24 @@ class Product:
 #product without physical stock (e.g. a software license), quantity always stays 0
 class NonStockedProduct(Product):
 
-    def __init__(self, name, price):
+    def __init__(self, name: str, price: float) -> None:
         super().__init__(name, price, quantity=0)
 
-    def set_quantity(self, quantity):
+    def set_quantity(self, quantity: int) -> None:
         if quantity != 0:
             raise ValueError(f"{self.name} is not stocked, quantity must stay 0.")
 
-    def available(self, quantity) -> bool:
+    def available(self, quantity: int) -> bool:
         if not self.is_active():
             print(f"Product {self.name} unavailable.")
             return False
         return True
 
-    def show(self, index=0):
+    def show(self, index: int = 0) -> None:
         prefix = f"{index}. " if index > 0 else ""
         print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: Unlimited (non-stocked), Active: {self.active}")
 
-    def buy(self, quantity):
+    def buy(self, quantity: int) -> float:
         if quantity <= 0:
             raise ValueError("Quantity must be greater than zero.")
         if not self.is_active():
@@ -98,23 +98,23 @@ class NonStockedProduct(Product):
 #product that can only be purchased up to a maximum quantity per order (e.g. shipping fee)
 class LimitedProduct(Product):
 
-    def __init__(self, name, price, quantity, maximum):
+    def __init__(self, name: str, price: float, quantity: int, maximum: int) -> None:
         super().__init__(name, price, quantity)
         if maximum < 1:
             raise ValueError("Maximum must be at least 1.")
         self.maximum = maximum
 
-    def available(self, quantity) -> bool:
+    def available(self, quantity: int) -> bool:
         if quantity > self.maximum:
             print(f"{self.name} is limited to {self.maximum} per order.")
             return False
         return super().available(quantity)
 
-    def show(self, index=0):
+    def show(self, index: int = 0) -> None:
         prefix = f"{index}. " if index > 0 else ""
         print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: {self.quantity}, Limited to {self.maximum} per order!, Active: {self.active}")
 
-    def buy(self, quantity):
+    def buy(self, quantity: int) -> float:
         if quantity > self.maximum:
             raise ValueError(f"{self.name} is limited to {self.maximum} per order.")
         return super().buy(quantity)
