@@ -1,3 +1,6 @@
+from promotions import Promotion
+
+
 class Product:
     total_products: int = 0
 
@@ -12,6 +15,7 @@ class Product:
         self.name = name
         self.price = price
         self.quantity = quantity
+        self.promotions: list[Promotion] = []
         Product.total_products += quantity
 
     def get_quantity(self) -> int:
@@ -24,6 +28,38 @@ class Product:
         self.quantity = quantity
         if self.quantity == 0:
             self.deactivate()
+
+    #first promotion of the product, None if there is none
+    def get_promotion(self) -> Promotion | None:
+        return self.promotions[0] if self.promotions else None
+
+    #replace all promotions with a single one, None removes all promotions
+    def set_promotion(self, promotion: Promotion | None) -> None:
+        self.promotions = [promotion] if promotion is not None else []
+
+    def get_promotions(self) -> list[Promotion]:
+        return list(self.promotions)
+
+    def add_promotion(self, promotion: Promotion) -> None:
+        if promotion not in self.promotions:
+            self.promotions.append(promotion)
+
+    def remove_promotion(self, promotion: Promotion) -> None:
+        if promotion not in self.promotions:
+            raise ValueError(f"{promotion.name} is not a promotion of {self.name}.")
+        self.promotions.remove(promotion)
+
+    #total price for quantity, promotions don't stack: the cheapest price for the customer is used
+    def get_price(self, quantity: int) -> float:
+        prices = [promotion.apply_promotion(self, quantity) for promotion in self.promotions]
+        return min([self.price * quantity, *prices])
+
+    #text appended to show() output, empty if no promotion
+    def promotion_info(self) -> str:
+        if not self.promotions:
+            return ""
+        label = "Promotion" if len(self.promotions) == 1 else "Promotions (best price applies)"
+        return f", {label}: {', '.join(promotion.name for promotion in self.promotions)}"
 
     def is_active(self) -> bool:
         return self.active
@@ -49,7 +85,7 @@ class Product:
 
     def show(self, index: int = 0) -> None:
         prefix = f"{index}. " if index > 0 else ""
-        print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: {self.quantity}, Active: {self.active}")
+        print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: {self.quantity}, Active: {self.active}{self.promotion_info()}")
 
 
     def buy(self, quantity: int) -> float:
@@ -63,7 +99,7 @@ class Product:
         if self.quantity == 0:
             self.deactivate()
         print(f"Bought {quantity} of {self.name}. Remaining stock: {self.quantity}.")
-        return quantity * self.price
+        return self.get_price(quantity)
 
 
 #product without physical stock (e.g. a software license), quantity always stays 0
@@ -84,7 +120,7 @@ class NonStockedProduct(Product):
 
     def show(self, index: int = 0) -> None:
         prefix = f"{index}. " if index > 0 else ""
-        print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: Unlimited (non-stocked), Active: {self.active}")
+        print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: Unlimited (non-stocked), Active: {self.active}{self.promotion_info()}")
 
     def buy(self, quantity: int) -> float:
         if quantity <= 0:
@@ -92,7 +128,7 @@ class NonStockedProduct(Product):
         if not self.is_active():
             raise ValueError(f"Product {self.name} is not active.")
         print(f"Bought {quantity} of {self.name}.")
-        return quantity * self.price
+        return self.get_price(quantity)
 
 
 #product that can only be purchased up to a maximum quantity per order (e.g. shipping fee)
@@ -112,7 +148,7 @@ class LimitedProduct(Product):
 
     def show(self, index: int = 0) -> None:
         prefix = f"{index}. " if index > 0 else ""
-        print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: {self.quantity}, Limited to {self.maximum} per order!, Active: {self.active}")
+        print(f"{prefix}{self.name}, Price: ${self.price}, Quantity: {self.quantity}, Limited to {self.maximum} per order!, Active: {self.active}{self.promotion_info()}")
 
     def buy(self, quantity: int) -> float:
         if quantity > self.maximum:

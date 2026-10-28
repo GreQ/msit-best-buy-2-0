@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import store
 import products
+import promotions
 
 
 # setup initial stock of inventory
@@ -11,6 +12,17 @@ product_list = [products.Product("MacBook Air M2", price=1450, quantity=100),
                 products.NonStockedProduct("Windows License", price=125),
                 products.LimitedProduct("Shipping", price=10, quantity=250, maximum=1)
                ]
+
+# Create promotion catalog
+second_half_price = promotions.SecondHalfPrice("Second Half price!")
+third_one_free = promotions.ThirdOneFree("Third One Free!")
+thirty_percent = promotions.PercentDiscount("30% off!", percent=30)
+
+# Add promotions to products
+product_list[0].set_promotion(second_half_price)
+product_list[1].set_promotion(third_one_free)
+product_list[3].set_promotion(thirty_percent)
+
 best_buy = store.Store(product_list)
 cart: list[tuple[products.Product, int]] = []
 active_options = "main_options"
@@ -84,7 +96,7 @@ def show_cart() -> None:
     print("\n-----\nYour cart:")
     price_total: float = 0
     for i, (product, quantity) in enumerate(cart):
-        price_product = product.price * quantity
+        price_product = product.get_price(quantity)
         price_total += price_product
         print(f"{i + 1}. {product.name} - Quantity: {quantity} - Price: ${price_product}")
     print(f"Total cost: ${price_total}")
